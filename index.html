@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Expiry Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="logo">🥗</div>
+      <h1>Food Expiry Tracker</h1>
+      <p>Track your food. Reduce food waste.</p>
+    </header>
+
+    <section class="summary">
+      <div class="stat">
+        <span id="total">0</span>
+        <small>Total Items</small>
+      </div>
+      <div class="stat">
+        <span id="soon">0</span>
+        <small>Expiring Soon</small>
+      </div>
+      <div class="stat">
+        <span id="expired">0</span>
+        <small>Expired</small>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Add Food Item</h2>
+      <form id="foodForm">
+        <label for="foodName">Food name</label>
+        <input id="foodName" type="text"
+               placeholder="e.g. Milk" required>
+
+        <label for="expiryDate">Expiry date</label>
+        <input id="expiryDate" type="date" required>
+
+        <button type="submit">+ Add Food</button>
+      </form>
+      <button id="notifyButton" class="secondary" type="button">
+        🔔 Enable Notifications
+      </button>
+      <p id="message" role="status"></p>
+    </section>
+
+    <section class="panel">
+      <h2>My Food Items</h2>
+      <div id="foodList"></div>
+    </section>
+
+    <footer>Made with care 💚 | Food Expiry Tracker</footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
