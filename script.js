@@ -8,83 +8,65 @@ const message = document.getElementById("message");
 let foods = [];
 
 try {
-  foods = JSON.parse(localStorage.getItem("foodItems")) || [];
-  if (!Array.isArray(foods)) foods = [];
+  foods = JSON.parse(localStorage.getItem("foods")) || [];
 } catch {
   foods = [];
 }
 
-function getStatus(dateText) {
+function saveFoods() {
+  localStorage.setItem("foods", JSON.stringify(foods));
+}
+
+function getStatus(expiry) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const expiry = new Date(dateText + "T00:00:00");
-  const days = Math.round((expiry - today) / 86400000);
+  const expiryDay = new Date(expiry + "T00:00:00");
+  const difference = Math.round(
+    (expiryDay - today) / (1000 * 60 * 60 * 24)
+  );
 
-  if (days < 0) {
-    return { text: "Expired", type: "danger", days };
+  if (difference < 0) {
+    return { text: "Expired", className: "expired" };
   }
 
-  if (days <= 3) {
-    return {
-      text: days === 0 ? "Expires today" : `Expires in ${days} day(s)`,
-      type: "warning",
-      days
-    };
+  if (difference <= 3) {
+    return { text: "Expiring Soon", className: "soon" };
   }
 
-  return { text: `${days} days left`, type: "", days };
-}
-
-function saveFoods() {
-  localStorage.setItem("foodItems", JSON.stringify(foods));
+  return { text: "Fresh", className: "fresh" };
 }
 
 function renderFoods() {
   foodList.innerHTML = "";
 
-  let soonCount = 0;
-  let expiredCount = 0;
+  if (foods.length === 0) {
+    foodList.innerHTML = "<p>No food items yet. Add your first item!</p>";
+    return;
+  }
 
   foods.forEach((food) => {
     const status = getStatus(food.expiry);
+    const item = document.createElement("div");
 
-    if (status.days < 0) expiredCount++;
-    else if (status.days <= 3) soonCount++;
+    item.className = "food-card";
+    item.innerHTML = `
+      <h3></h3>
+      <p>Expiry date: ${food.expiry}</p>
+      <p class="${status.className}">${status.text}</p>
+      <button type="button" class="delete-btn">Delete</button>
+    `;
 
-    const card = document.createElement("div");
-    card.className = "food-card";
+    item.querySelector("h3").textContent = food.name;
 
-    const name = document.createElement("strong");
-    name.textContent = food.name;
-
-    const date = document.createElement("p");
-    date.textContent = "Expiry date: " + food.expiry;
-
-    const badge = document.createElement("span");
-    badge.className = "status " + status.type;
-    badge.textContent = status.text;
-
-    const remove = document.createElement("button");
-    remove.className = "delete";
-    remove.textContent = "Delete";
-    remove.addEventListener("click", () => {
-      foods = foods.filter(item => item.id !== food.id);
+    item.querySelector(".delete-btn").addEventListener("click", () => {
+      foods = foods.filter((entry) => entry.id !== food.id);
       saveFoods();
       renderFoods();
     });
 
-    card.append(name, date, badge, remove);
-    foodList.appendChild(card);
+    foodList.appendChild(item);
   });
-
-  document.getElementById("total").textContent = foods.length;
-  document.getElementById("soon").textContent = soonCount;
-  document.getElementById("expired").textContent = expiredCount;
-
-  if (foods.length === 0) {
-    foodList.textContent = "No food items yet. Add your first item!";
-  }
 }
 
 form.addEventListener("submit", (event) => {
@@ -98,51 +80,49 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  if (expiry < new Date().toLocaleDateString("en-CA")) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const selectedDate = new Date(expiry + "T00:00:00");
+
+  if (Number.isNaN(selectedDate.getTime()) || selectedDate < today) {
     message.textContent = "Choose today or a future expiry date.";
     return;
   }
 
   foods.push({
     id: Date.now() + Math.random(),
-    name,
-    expiry
+    name: name,
+    expiry: expiry
   });
 
   saveFoods();
   renderFoods();
   form.reset();
+
   message.textContent = "Food item added successfully!";
 });
 
-document.getElementById("notifyButton")
-  .addEventListener("click", async () => {
+const notificationButton = document.getElementById("notificationButton");
+
+if (notificationButton) {
+  notificationButton.addEventListener("click", async () => {
     if (!("Notification" in window)) {
-      message.textContent =
-        "Browser notifications are not supported here.";
+      message.textContent = "Notifications are not supported in this browser.";
       return;
     }
 
-    if (!window.isSecureContext) {
-      message.textContent =
-        "Notifications need a secure HTTPS website.";
-      return;
-    }
+    const permission = await Notification.requestPermission();
 
-    try {
-      const permission = await Notification.requestPermission();
-
-      if (permission === "granted") {
-        new Notification("Food Expiry Tracker", {
-          body: "Notifications enabled while supported by your browser."
-        });
-        message.textContent = "Test notification sent!";
-      } else {
-        message.textContent = "Notification permission was not granted.";
-      }
-    } catch {
-      message.textContent = "Could not enable notifications.";
+    if (permission === "granted") {
+      new Notification("Food Expiry Tracker", {
+        body: "Notifications enabled successfully!"
+      });
+      message.textContent = "Notifications enabled!";
+    } else {
+      message.textContent = "Please allow notifications in your browser.";
     }
   });
+}
 
 renderFoods();
